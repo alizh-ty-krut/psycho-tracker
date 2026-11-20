@@ -1,0 +1,5 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block title %}{% tr 'Sign in' %} · Точка опоры{% endblock %}
+{% block content %}<section class="auth-card"><p class="eyebrow">Точка опоры · Point of Support</p><h1>{% tr 'Sign in' %}</h1>
+<form method="post">{% csrf_token %}{{ form.as_p }}{% if form.errors %}<p class="error">{% tr 'Check your username and password.' %}</p>{% endif %}<button class="primary">{% tr 'Sign in' %}</button></form>
+<p class="muted">{% tr 'Still no account? Clients need an invitation code.' %}</p><a href="{% url 'client_signup' %}">{% tr 'Register with code' %}</a><p><a href="{% url 'therapist_signup' %}">{% tr 'Create therapist account' %}</a></p></section>{% endblock %}

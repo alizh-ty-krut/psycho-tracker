@@ -1,0 +1,7 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block title %}{% tr 'Connect Telegram' %} · Точка опоры{% endblock %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">Точка опоры</p><h1>{% tr 'Connect Telegram' %}</h1></div></div>
+<section class="panel"><p>{% tr 'Send the one-time code from your Point of Support account to connect Telegram.' %}</p>
+{% if connected %}<div class="therapist-note"><strong>{% tr 'Telegram is connected.' %}</strong></div><form method="post" action="{% url 'telegram_disconnect' %}">{% csrf_token %}<button class="danger-link">{% tr 'Disconnect Telegram' %}</button></form>{% endif %}
+{% if code %}<h2>{% tr 'Link code' %}</h2><div class="invite-code">{{ code }}</div><p class="muted">{% tr 'Send this one-time code to your Telegram bot within 15 minutes.' %}</p>{% if bot_username %}<a class="button primary" href="https://t.me/{{ bot_username }}?start={{ code }}">Open @{{ bot_username }}</a>{% else %}<p class="muted">{% tr 'Copy the code, open your Telegram bot, and send the code as a message.' %}</p>{% endif %}
+{% else %}<form method="post">{% csrf_token %}<button class="primary">{% tr 'Generate link code' %}</button></form>{% endif %}</section>{% endblock %}

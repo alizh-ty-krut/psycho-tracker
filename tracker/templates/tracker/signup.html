@@ -1,0 +1,6 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block title %}{{ title }} · Точка опоры{% endblock %}
+{% block content %}<section class="auth-card"><p class="eyebrow">Точка опоры · Point of Support</p><h1>{% tr title %}</h1>
+{% if therapist %}<p class="muted">{% tr 'Initial website setup for the psychologist.' %}</p>{% endif %}
+<form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">{% tr 'Create account' %}</button></form>
+<p><a href="{% url 'login' %}">{% tr 'Sign in' %}</a></p></section>{% endblock %}

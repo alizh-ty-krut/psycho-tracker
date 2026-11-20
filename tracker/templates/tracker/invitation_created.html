@@ -1,0 +1,2 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block content %}<section class="auth-card"><p class="eyebrow">{% tr 'Expires in 12 hours' %}</p><h1>{% tr 'Invitation code' %}</h1><div class="invite-code">{{ code }}</div><p class="muted">{% tr 'The code is shown once. Copy it and share it securely with your client.' %}</p><a class="button primary" href="{% url 'therapist_dashboard' %}">{% tr 'Clients' %}</a></section>{% endblock %}

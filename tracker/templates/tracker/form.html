@@ -1,0 +1,5 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block title %}{% tr title %} · Точка опоры{% endblock %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">Точка опоры</p><h1>{% tr title %}</h1></div></div>
+{% if e2ee %}<div class="notice">{% tr 'This record is encrypted in your browser before it is sent to the server.' %} <a href="{% url 'encryption_keys' %}">{% tr 'Encryption keys' %}</a></div>{% endif %}
+<section class="panel form-panel"><form method="post"{% if e2ee %} data-e2ee-form data-client-id="{{ e2ee_client_id }}" data-kind="{{ e2ee_kind|default:'request' }}" data-edit-payload="{{ encrypted_payload }}" data-legacy="{{ legacy_payload }}"{% endif %}>{% csrf_token %}{% if e2ee %}<input type="hidden" name="encrypted_payload" value="">{% endif %}{{ form.as_p }}<div class="actions"><button class="primary">{% tr 'Save' %}</button><a class="button secondary" href="{% url back_url %}">{% tr 'Cancel' %}</a></div><p class="error" data-e2ee-error></p></form></section>{% endblock %}

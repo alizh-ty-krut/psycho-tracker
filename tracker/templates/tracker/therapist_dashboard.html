@@ -1,0 +1,5 @@
+{% extends 'tracker/base.html' %}{% load ui_tags %}
+{% block title %}{% tr 'Clients' %} · Точка опоры{% endblock %}
+{% block content %}<div class="page-heading"><div><p class="eyebrow">{% tr 'Psychologist' %}</p><h1>{% tr 'Clients' %}</h1></div><form method="post" action="{% url 'create_invitation' %}">{% csrf_token %}<button class="primary">{% tr 'Generate invitation' %}</button></form></div>
+{% if clients %}<div class="client-grid">{% for client in clients %}<a class="client-card" href="{% url 'therapist_client' client.id %}"><span class="avatar">{% if client.first_name %}{{ client.first_name|first }}{% else %}{{ client.username|first }}{% endif %}</span><span><strong>{{ client.first_name }} {{ client.last_name }}</strong><small>@{{ client.username }}</small></span><span class="arrow">→</span></a>{% endfor %}</div>{% else %}<section class="empty panel"><h2>{% tr 'No clients yet. Create an invitation to add your first client.' %}</h2></section>{% endif %}
+{% if invitations %}<section class="panel"><h2>{% tr 'Active invitations' %}</h2><p class="muted">{{ invitations|length }} — {% tr 'Expires in 12 hours' %}</p></section>{% endif %}{% endblock %}

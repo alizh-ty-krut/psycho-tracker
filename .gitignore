@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+staticfiles/
+.DS_Store
+Thumbs.db
+point-support-*-key.json
