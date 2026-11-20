@@ -45,13 +45,4 @@ STRINGS = {
 STRINGS['ru'].update({
     'Start with a short note about how you feel.': 'Начните с короткой заметки о том, как вы себя чувствуете.',
 })
-STRINGS['ru'].update({
-    'Encryption keys': 'Ключи шифрования',
-    'Create a key in this browser and save the downloaded file somewhere safe. The key is never sent to the server.': 'Создайте ключ в этом браузере и сохраните скачанный файл в надёжном месте. Ключ не отправляется на сервер.',
-    'If the client key and the psychologist offline copy are both lost, encrypted records cannot be recovered.': 'Если потерять ключ клиента и офлайн-копию психолога, записи нельзя будет восстановить.',
-    'Create or download key': 'Создать или скачать ключ', 'Import a saved key file': 'Импортировать файл ключа',
-    'Import encryption key': 'Импортировать ключ шифрования', 'The key stays in this browser tab only.': 'Ключ хранится только в этой вкладке браузера.',
-    'This record is encrypted in your browser before it is sent to the server.': 'Запись шифруется в браузере перед отправкой на сервер.',
-    'Encrypted record': 'Зашифрованная запись', 'Loading encrypted record': 'Загрузка зашифрованной записи',
-})
 STRINGS['en'] = {key: key for key in STRINGS['ru']}

@@ -7,12 +7,11 @@
   <link rel="stylesheet" href="{% static 'tracker/style.css' %}">
 </head>
 <body>
-  <form hidden data-e2ee-csrf>{% csrf_token %}</form>
   <header class="topbar"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">т</span><span>Точка опоры</span></a>
     <nav>
       {% if user.is_authenticated %}
         {% if user.role == 'therapist' %}<a href="{% url 'therapist_dashboard' %}">{% tr 'Clients' %}</a>{% else %}<a href="{% url 'client_dashboard' %}">{% tr 'Home' %}</a><a href="{% url 'request_list' %}">{% tr 'My requests' %}</a><a href="{% url 'mood_diary' %}">{% tr 'Mood diary' %}</a><a href="{% url 'sleep_diary' %}">{% tr 'Sleep diary' %}</a>{% endif %}
-        <details class="account-menu"><summary>{{ user.first_name|default:user.username }}</summary><div class="menu-panel"><a href="{% url 'username_change' %}">{% tr 'Username' %}</a><a href="{% url 'password_change' %}">{% tr 'Password' %}</a>{% if user.role == 'client' %}<a href="{% url 'telegram_link' %}">Telegram</a><a href="{% url 'encryption_keys' %}">{% tr 'Encryption keys' %}</a>{% endif %}<form method="post" action="{% url 'language' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button name="language" value="ru">Русский</button><button name="language" value="en">English</button></form><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>{% tr 'Sign out' %}</button></form></div></details>
+        <details class="account-menu"><summary>{{ user.first_name|default:user.username }}</summary><div class="menu-panel"><a href="{% url 'username_change' %}">{% tr 'Username' %}</a><a href="{% url 'password_change' %}">{% tr 'Password' %}</a>{% if user.role == 'client' %}<a href="{% url 'telegram_link' %}">Telegram</a>{% endif %}<form method="post" action="{% url 'language' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button name="language" value="ru">Русский</button><button name="language" value="en">English</button></form><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>{% tr 'Sign out' %}</button></form></div></details>
       {% else %}<form class="language-quick" method="post" action="{% url 'language' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button name="language" value="ru">RU</button><button name="language" value="en">EN</button></form><a href="{% url 'login' %}">{% tr 'Sign in' %}</a>{% endif %}
     </nav>
   </header>
@@ -21,6 +20,5 @@
     {% block content %}{% endblock %}
   </main>
   <footer>Точка опоры <span>·</span> Point of Support</footer>
-  <script defer src="{% static 'tracker/e2ee.js' %}"></script>
 </body>
 </html>

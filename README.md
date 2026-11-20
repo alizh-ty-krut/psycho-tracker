@@ -130,13 +130,9 @@ python manage.py run_telegram_bot
 
 Keep that window open too. The psychologist adds sessions on each client's page. A client creates a one-time Telegram code in their account and sends it to the bot. The bot needs to stay running to link accounts and send reminders.
 
-## Encryption keys and privacy
+## Privacy
 
-Requests, diary entries, and comments are encrypted in the browser before being saved. Each client creates a key from **Encryption keys**, keeps one copy, and gives a separate offline copy to the psychologist. The psychologist imports it on the client's page. The key stays in that browser tab; import it again after closing the tab. If both key copies are lost, those records cannot be recovered. The downloaded JSON file contains the secret key in readable form: keep it offline and do not email or upload it to cloud storage.
-
-Account names, request priorities and statuses, session details, and Telegram chat IDs remain readable to the computer hosting the site. A person who controls that computer could also change the website code to try to capture keys. Self-hosting means you control the computer and database, but it does not protect data from someone who gains control of that computer.
-
-Existing notes from before encryption was added remain readable in old database copies. Open each old entry with its key imported so the site can encrypt it. Then remove old database copies or encrypt them separately.
+Diary entries, requests, comments, account names, session information, and Telegram chat IDs are stored in the local SQLite database without application-level encryption. Keep the computer and `db.sqlite3` private, use a strong computer login password, and protect backups. HTTPS protects traffic when clients connect from the internet, but it does not encrypt the database file.
 
 ## Backups
 

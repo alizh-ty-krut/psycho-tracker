@@ -1,5 +1,4 @@
 import hashlib
-import json
 import secrets
 from datetime import timedelta
 from functools import wraps
@@ -12,7 +11,7 @@ from django.contrib.auth.views import PasswordChangeView
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from django.http import Http404, JsonResponse
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -134,16 +133,6 @@ def therapist_client(request, client_id):
     closed_requests = list(RequestItem.objects.filter(client=client, is_closed=True).order_by('-created_at'))
     mood_entries = list(MoodEntry.objects.filter(client=client))
     sleep_entries = list(SleepEntry.objects.filter(client=client))
-    add_legacy_data(requests, 'request')
-    add_legacy_data(closed_requests, 'request')
-    add_legacy_data(mood_entries, 'mood')
-    add_legacy_data(sleep_entries, 'sleep')
-    for entry in requests + closed_requests:
-        if hasattr(entry, 'therapist_comment'):
-            entry.therapist_comment.legacy_e2ee = json.dumps({'content': entry.therapist_comment.content}, ensure_ascii=False) if not entry.therapist_comment.encrypted_payload else ''
-    for entry in mood_entries + sleep_entries:
-        if hasattr(entry, 'therapist_comment'):
-            entry.therapist_comment.legacy_e2ee = json.dumps({'content': entry.therapist_comment.content}, ensure_ascii=False) if not entry.therapist_comment.encrypted_payload else ''
     return render(request, 'tracker/therapist_client.html', {
         'client': client,
         'requests': requests,
@@ -159,8 +148,6 @@ def therapist_client(request, client_id):
 def request_list(request):
     requests = list(RequestItem.objects.filter(client=request.user, is_closed=False))
     closed_requests = list(RequestItem.objects.filter(client=request.user, is_closed=True).order_by('-created_at'))
-    add_legacy_data(requests, 'request')
-    add_legacy_data(closed_requests, 'request')
     return render(request, 'tracker/requests.html', {
         'requests': requests,
         'closed_requests': closed_requests,
@@ -170,36 +157,29 @@ def request_list(request):
 @role_required(User.Role.CLIENT)
 def request_edit(request, request_id=None):
     entry = get_object_or_404(RequestItem, pk=request_id, client=request.user, is_closed=False) if request_id else None
-    if request.method == 'POST':
-        payload = request.POST.get('encrypted_payload', '')
-        if not payload.startswith('e2e1:'):
-            raise Http404
-        desired = request.POST.get('priority')
-        try:
-            desired = int(desired) if desired else None
-        except ValueError:
-            desired = None
+    form = RequestForm(request.POST or None, instance=entry)
+    if request.method == 'POST' and form.is_valid():
+        desired = form.cleaned_data.get('priority')
         with transaction.atomic():
             active = RequestItem.objects.filter(client=request.user, is_closed=False)
             if entry:
                 active.exclude(pk=entry.pk).filter(priority__gt=entry.priority).update(priority=F('priority') - 1)
-                RequestItem.objects.filter(pk=entry.pk).update(priority=None)
-                count = active.exclude(pk=entry.pk).count()
+                active = active.exclude(pk=entry.pk)
+                count = active.count()
             else:
                 count = active.count()
             target = max(1, min(desired or count + 1, count + 1))
             active.filter(priority__gte=target).update(priority=F('priority') + 1)
-            saved = entry or RequestItem(client=request.user)
-            saved.content = ''
-            saved.encrypted_payload = payload
+            saved = form.save(commit=False)
+            saved.client = request.user
             saved.priority = target
             saved.is_closed = False
             saved.save()
             normalize_priorities(request.user)
         return redirect('request_list')
-    form = RequestForm(instance=entry, initial={'priority': entry.priority if entry else None})
+    form = RequestForm(request.POST or None, instance=entry, initial={'priority': entry.priority if entry else None})
     localize_form(form, request.user.language)
-    return render(request, 'tracker/form.html', {'form': form, 'title': 'Edit' if entry else 'Add request', 'back_url': 'request_list', 'e2ee': True, 'e2ee_client_id': request.user.pk, 'encrypted_payload': entry.encrypted_payload if entry else ''})
+    return render(request, 'tracker/form.html', {'form': form, 'title': 'Edit' if entry else 'Add request', 'back_url': 'request_list'})
 
 
 def normalize_priorities(client):
@@ -239,10 +219,6 @@ def request_delete(request, request_id):
 def diary_view(request, kind):
     model, form_class, template, context_name = (MoodEntry, MoodForm, 'tracker/mood_diary.html', 'mood_entries') if kind == 'mood' else (SleepEntry, SleepForm, 'tracker/sleep_diary.html', 'sleep_entries')
     entries = list(model.objects.filter(client=request.user))
-    add_legacy_data(entries, kind)
-    for entry in entries:
-        if hasattr(entry, 'therapist_comment'):
-            entry.therapist_comment.legacy_e2ee = json.dumps({'content': entry.therapist_comment.content}, ensure_ascii=False) if not entry.therapist_comment.encrypted_payload else ''
     return render(request, template, {'entries': entries, context_name: entries, 'form': localize_form(form_class(), request.user.language), 'kind': kind})
 
 
@@ -260,23 +236,14 @@ def sleep_diary(request):
 def diary_create(request, kind, entry_id=None):
     model, form_class, route = (MoodEntry, MoodForm, 'mood_diary') if kind == 'mood' else (SleepEntry, SleepForm, 'sleep_diary')
     entry = get_object_or_404(model, pk=entry_id, client=request.user) if entry_id else None
-    if request.method == 'POST':
-        payload = request.POST.get('encrypted_payload', '')
-        if not payload.startswith('e2e1:'):
-            raise Http404
-        saved = entry or model(client=request.user)
-        saved.encrypted_payload = payload
-        if kind == 'mood':
-            saved.date, saved.feeling, saved.cause, saved.intensity = None, '', '', 0
-            saved.helpful_action, saved.notes = '', ''
-        else:
-            saved.date, saved.bedtime, saved.wake_time, saved.quality = None, None, None, 0
-            saved.wellbeing, saved.last_coffee, saved.notes = '', None, ''
+    form = form_class(request.POST or None, instance=entry)
+    if request.method == 'POST' and form.is_valid():
+        saved = form.save(commit=False)
+        saved.client = request.user
         saved.save()
         return redirect(route)
-    form = localize_form(form_class(instance=None), request.user.language)
-    legacy = legacy_payload(entry, kind) if entry and not entry.encrypted_payload else ''
-    return render(request, 'tracker/form.html', {'form': form, 'title': 'Edit' if entry else 'Add entry', 'back_url': route, 'e2ee': True, 'e2ee_client_id': request.user.pk, 'encrypted_payload': entry.encrypted_payload if entry else '', 'legacy_payload': json.dumps(legacy, ensure_ascii=False) if legacy else '', 'e2ee_kind': kind})
+    localize_form(form, request.user.language)
+    return render(request, 'tracker/form.html', {'form': form, 'title': 'Edit' if entry else 'Add entry', 'back_url': route})
 
 
 @role_required(User.Role.CLIENT)
@@ -292,8 +259,8 @@ def diary_delete(request, kind, entry_id):
 @require_POST
 def therapist_comment(request, client_id, kind, entry_id):
     client = get_object_or_404(User, pk=client_id, role=User.Role.CLIENT)
-    payload = request.POST.get('encrypted_payload', '')
-    if payload.startswith('e2e1:'):
+    form = CommentForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
         if kind == 'request':
             entry = get_object_or_404(RequestItem, pk=entry_id, client=client)
             comment, _ = RequestComment.objects.get_or_create(request=entry, defaults={'author': request.user})
@@ -305,54 +272,10 @@ def therapist_comment(request, client_id, kind, entry_id):
             comment, _ = SleepComment.objects.get_or_create(entry=entry, defaults={'author': request.user})
         else:
             raise Http404
-        comment.content = ''
-        comment.encrypted_payload = payload
+        comment.content = form.cleaned_data['content']
         comment.author = request.user
         comment.save()
     return redirect('therapist_client', client_id=client.pk)
-
-
-@login_required
-@require_POST
-def e2ee_migrate_legacy(request, client_id, kind, entry_id):
-    client = get_object_or_404(User, pk=client_id, role=User.Role.CLIENT)
-    if request.user.role == User.Role.CLIENT and request.user.pk != client.pk:
-        raise Http404
-    if request.user.role not in (User.Role.CLIENT, User.Role.THERAPIST):
-        raise Http404
-    try:
-        payload = json.loads(request.body.decode('utf-8')).get('payload', '')
-    except (ValueError, UnicodeDecodeError):
-        raise Http404
-    if not isinstance(payload, str) or not payload.startswith('e2e1:'):
-        raise Http404
-    if kind == 'request':
-        entry = get_object_or_404(RequestItem, pk=entry_id, client=client)
-        entry.content, entry.encrypted_payload = '', payload
-        entry.save(update_fields=['content', 'encrypted_payload'])
-    elif kind == 'mood':
-        entry = get_object_or_404(MoodEntry, pk=entry_id, client=client)
-        entry.encrypted_payload = payload
-        entry.date, entry.feeling, entry.cause, entry.intensity = None, '', '', 0
-        entry.helpful_action, entry.notes = '', ''
-        entry.save()
-    elif kind == 'sleep':
-        entry = get_object_or_404(SleepEntry, pk=entry_id, client=client)
-        entry.encrypted_payload = payload
-        entry.date, entry.bedtime, entry.wake_time, entry.quality = None, None, None, 0
-        entry.wellbeing, entry.last_coffee, entry.notes = '', None, ''
-        entry.save()
-    elif kind in ('request_comment', 'mood_comment', 'sleep_comment'):
-        model = {'request_comment': RequestComment, 'mood_comment': MoodComment, 'sleep_comment': SleepComment}[kind]
-        comment = get_object_or_404(model, pk=entry_id)
-        owner = comment.request.client if kind == 'request_comment' else comment.entry.client
-        if owner.pk != client.pk:
-            raise Http404
-        comment.content, comment.encrypted_payload = '', payload
-        comment.save(update_fields=['content', 'encrypted_payload'])
-    else:
-        raise Http404
-    return JsonResponse({'ok': True})
 
 
 def language(request):
@@ -390,26 +313,6 @@ class SitePasswordChangeView(PasswordChangeView):
         context['back_url'] = 'home'
         context['form'] = localize_form(context['form'], self.request.user.language)
         return context
-
-
-def legacy_payload(entry, kind):
-    if kind == 'request':
-        return {'content': entry.content}
-    if kind == 'mood':
-        return {'date': entry.date.isoformat() if entry.date else '', 'feeling': entry.feeling, 'cause': entry.cause, 'intensity': entry.intensity, 'helpful_action': entry.helpful_action, 'notes': entry.notes}
-    if kind == 'sleep':
-        return {'date': entry.date.isoformat() if entry.date else '', 'bedtime': entry.bedtime.strftime('%H:%M') if entry.bedtime else '', 'wake_time': entry.wake_time.strftime('%H:%M') if entry.wake_time else '', 'quality': entry.quality, 'wellbeing': entry.wellbeing, 'last_coffee': entry.last_coffee.strftime('%H:%M') if entry.last_coffee else '', 'notes': entry.notes}
-    return {}
-
-
-def add_legacy_data(entries, kind):
-    for entry in entries:
-        entry.legacy_e2ee = json.dumps(legacy_payload(entry, kind), ensure_ascii=False) if not entry.encrypted_payload else ''
-
-
-@role_required(User.Role.CLIENT)
-def encryption_keys(request):
-    return render(request, 'tracker/encryption_keys.html', {'client_id': request.user.pk})
 
 
 @role_required(User.Role.CLIENT)

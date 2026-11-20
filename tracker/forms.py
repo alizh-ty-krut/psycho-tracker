@@ -33,6 +33,9 @@ class RequestForm(forms.ModelForm):
 
 
 class MoodForm(forms.ModelForm):
+    date = forms.DateField(required=True, widget=forms.DateInput(attrs={'type': 'date'}))
+    feeling = forms.CharField(max_length=160, required=True)
+    cause = forms.CharField(required=True, widget=forms.Textarea(attrs={'rows': 3}))
     intensity = forms.IntegerField(min_value=1, max_value=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
     class Meta:
         model = MoodEntry
@@ -41,7 +44,11 @@ class MoodForm(forms.ModelForm):
 
 
 class SleepForm(forms.ModelForm):
+    date = forms.DateField(required=True, widget=forms.DateInput(attrs={'type': 'date'}))
+    bedtime = forms.TimeField(required=True, widget=forms.TimeInput(attrs={'type': 'time'}))
+    wake_time = forms.TimeField(required=True, widget=forms.TimeInput(attrs={'type': 'time'}))
     quality = forms.IntegerField(min_value=1, max_value=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    wellbeing = forms.CharField(required=True, widget=forms.Textarea(attrs={'rows': 2}))
     class Meta:
         model = SleepEntry
         fields = ('date', 'bedtime', 'wake_time', 'quality', 'wellbeing', 'last_coffee', 'notes')

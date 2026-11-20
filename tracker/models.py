@@ -41,7 +41,6 @@ class TelegramConnection(models.Model):
 class RequestItem(models.Model):
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='requests')
     content = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     priority = models.PositiveIntegerField(null=True, blank=True)
     is_closed = models.BooleanField(default=False)
@@ -54,31 +53,28 @@ class RequestComment(models.Model):
     request = models.OneToOneField(RequestItem, on_delete=models.CASCADE, related_name='therapist_comment')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
 class MoodEntry(models.Model):
     client = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mood_entries')
     date = models.DateField(null=True, blank=True)
-    feeling = models.CharField(max_length=2048, blank=True)
+    feeling = models.CharField(max_length=160, blank=True)
     cause = models.TextField(blank=True)
     intensity = models.PositiveSmallIntegerField(default=0)
     helpful_action = models.TextField(blank=True)
     notes = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-date', '-created_at']
 
 
 class MoodComment(models.Model):
     entry = models.OneToOneField(MoodEntry, on_delete=models.CASCADE, related_name='therapist_comment')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -91,19 +87,17 @@ class SleepEntry(models.Model):
     wellbeing = models.TextField(blank=True)
     last_coffee = models.TimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-date', '-created_at']
 
 
 class SleepComment(models.Model):
     entry = models.OneToOneField(SleepEntry, on_delete=models.CASCADE, related_name='therapist_comment')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField(blank=True)
-    encrypted_payload = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 

@@ -9,4 +9,3 @@ venv/
 staticfiles/
 .DS_Store
 Thumbs.db
-point-support-*-key.json
